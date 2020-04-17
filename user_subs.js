@@ -16,6 +16,7 @@ module.exports = class {
     try {
       let new_recepient = {};
       var data;
+      recepients = [];
       new_recepient = { user_id: user_id, country: country };
       if (fs.existsSync(jPath)) {
         recepients = require(jPath);
@@ -24,8 +25,9 @@ module.exports = class {
           recepients.push(new_recepient);
           console.log("added new user.");
         } else {
-          console.log("user already exists.");
-          return;
+          let index = recepients.findIndex((r) => r.user_id === user_id);
+          recepients[index].country = country;
+          console.log("user already exists, country updated.");
         }
       } else {
         recepients.push(new_recepient);

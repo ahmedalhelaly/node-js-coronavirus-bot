@@ -17,32 +17,6 @@ var sender_id;
 
 subs = user_sub.get_recepients();
 
-async function get_countries() {
-  country_list = await getCountries().then((countries) => countries);
-  //console.log(country_list);
-}
-
-// List all countries once application started from firebase
-get_countries();
-
-// Hook firebase updates to be sent according to recepients.json
-readFirebaseUpdates();
-
-// Sets server port and logs message on success
-app.listen(process.env.PORT || config.port, () =>
-  console.log("webhook is listening")
-);
-
-async function send_stats(sender_id, country) {
-  try {
-    let result = await readFromFirebase(country).then((msg) => msg);
-    //console.log(result);
-    sendMessage(sender_id, result);
-  } catch (error) {
-    console.log(error);
-  }
-}
-
 // Adds support for GET requests to our webhook
 app.get("/webhook", (req, res) => {
   // Your verify token. Should be a random string.
@@ -73,25 +47,16 @@ app.post("/webhook", (req, res) => {
 
   // Checks this is an event from a page subscription
   if (body.object === "page") {
+    // Returns a '200 OK' response to all requests
+    res.status(200).send("EVENT_RECEIVED");
+
     // Iterates over each entry - there may be multiple if batched
     body.entry.forEach((entry) => {
       // Gets the message. entry.messaging is an array, but
       // will only ever contain one message, so we get index 0
       let webhook_event = entry.messaging[0];
+      //console.log(webhook_event);
 
-      if (webhook_event.message) {
-        msg_text = webhook_event.message.text.trim().toLowerCase();
-        sender_id = webhook_event.sender.id;
-        if (msg_text && sender_id) {
-          //console.log(`New message received: ${msg_text} from: ${sender_id}`);
-          if (country_list && country_list.includes(msg_text)) {
-            user_sub.add_user(sender_id, msg_text);
-            send_stats(sender_id, msg_text);
-          }
-          //sendMessage(sender_id, msg_text);
-          //console.log(`New message sent: ${msg_text} to: ${sender_id}`);
-        }
-      }
       if ("read" in webhook_event) {
         // console.log("Got a read event");
         return;
@@ -101,20 +66,84 @@ app.post("/webhook", (req, res) => {
         // console.log("Got a delivery event");
         return;
       }
-      //console.log(webhook_event);
-    });
 
-    // Returns a '200 OK' response to all requests
-    res.status(200).send("EVENT_RECEIVED");
+      if (webhook_event.message) {
+        console.log(country_list);
+        msg_text = webhook_event.message.text.trim().toLowerCase();
+        sender_id = webhook_event.sender.id;
+        if (msg_text && sender_id) {
+          console.log(`New message received: ${msg_text} from: ${sender_id}`);
+          if (country_list && country_list.includes(msg_text)) {
+            user_sub.add_user(sender_id, msg_text);
+            send_stats(sender_id, msg_text);
+          } else if (msg_text === "get started") {
+            sendCountries();
+          }
+        }
+      }
+      if (webhook_event.postback) {
+        sender_id = webhook_event.sender.id;
+        let postback = webhook_event.postback;
+        // Check for the special Get Starded with referral
+        let payload;
+        if (postback.payload.startsWith("{")) {
+          payload = postback.title.toLowerCase();
+        } else {
+          // Get the payload of the postback
+          payload = postback.payload;
+        }
+        console.log("Received Payload:", `${payload}`);
+        // Set the action based on the payload
+        if (payload === "GET_STARTED" || payload === "get started") {
+          sendCountries();
+        }
+      }
+    });
   } else {
     // Returns a '404 Not Found' if event is not from a page subscription
     res.sendStatus(404);
   }
 });
 
+// List all countries once application started from firebase
+get_countries();
+
+async function get_countries() {
+  country_list = await readCountries().then((countries) => countries);
+  //console.log(country_list.length);
+}
+
+function sendCountries() {
+  let countries = country_list.map((x) =>
+    x.replace(/^\w/, (c) => c.toUpperCase())
+  );
+  let message_header =
+    "Please, Register your country name using the list:\n...........................................\n";
+  let countries_part1 = `${countries.splice(0, 110).join("\r\n").trim()}`;
+  let countries_part2 = `${countries.join("\r\n").trim()}`;
+  console.log(message_header + countries_part1 + countries_part2);
+  sendMessage(sender_id, message_header);
+  sendMessage(sender_id, countries_part1);
+  sendMessage(sender_id, countries_part2);
+}
+// Hook firebase updates to be sent according to recepients.json
+readFirebaseUpdates();
+
+// Sets server port and logs message on success
+let port = process.env.PORT || config.port;
+app.listen(port, () => console.log(`webhook is listening on port ${port}`));
+
+async function send_stats(sender_id, country) {
+  try {
+    let result = await readFromFirebase(country).then((msg) => msg);
+    //console.log(result);
+    sendMessage(sender_id, result);
+  } catch (error) {
+    console.log(error);
+  }
+}
 function sendMessage(recipientId, message) {
   request({
-    messaging_type: "RESPONSE",
     url:
       "https://graph.facebook.com/v3.2/me/messages?access_token=" +
       config.pageAccesToken,
@@ -130,19 +159,19 @@ function sendMessage(recipientId, message) {
     },
     function(error, response, body) {
       if (error) {
-        // console.log('Error sending message: ', error);
+        console.log("Error sending message: ", error);
       } else if (response.body.error) {
         // console.log('Error: ', response.body.error);
       }
     },
   });
-  console.log(`New message sent: ${message} to: ${sender_id}`);
+  console.log(`New message sent: ${message} to: ${recipientId}`);
 }
 function readFromFirebase(country_name) {
   return new Promise((resolve, reject) => {
     var resultMessage = "";
     var stats = {};
-    let regex = /(\d+\,?\d*\.?\d*)/g;
+    //let regex = /(\d+\,?\d*\.?\d*)/g;
     try {
       if (firebase.apps.length == 0) {
         firebase.initializeApp({
@@ -223,7 +252,7 @@ function readFirebaseUpdates() {
     console.log(error);
   }
 }
-function getCountries() {
+function readCountries() {
   return new Promise((resolve, reject) => {
     var countries = [];
     if (firebase.apps.length == 0) {
@@ -236,41 +265,14 @@ function getCountries() {
     dbRef
       .once("value", function (snapshot) {
         snapshot.forEach((node) => {
-          countries.push(node.key);
+          if (
+            parseFloat(node.child("total_cases").val().replace(",", "")) > 0
+          ) {
+            countries.push(node.key);
+          }
         });
       })
       .then(() => resolve(countries))
       .catch(() => reject(countries));
   });
-}
-
-function getStarted_Button(res) {
-  var messageData = {
-    get_started: [
-      {
-        payload: "GET_STARTED_PAYLOAD",
-      },
-    ],
-  };
-
-  // Start the request
-  request(
-    {
-      url:
-        "https://graph.facebook.com/v3.2/me/messages?access_token=" +
-        config.pageAccesToken,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      form: messageData,
-    },
-    function (error, response, body) {
-      if (!error && response.statusCode == 200) {
-        // Print out the response body
-        res.send(body);
-      } else {
-        // TODO: Handle errors
-        res.send(body);
-      }
-    }
-  );
 }
