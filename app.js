@@ -232,6 +232,7 @@ function readFirebaseUpdates() {
       dbRefs.push(firebase.database().ref(sub.country));
     });
     //console.log(dbRefs.length);
+    let old_val = null;
 
     if (dbRefs) {
       dbRefs.forEach((dbRef) => {
@@ -239,12 +240,19 @@ function readFirebaseUpdates() {
         dbRef.on("child_changed", (snapshot) => {
           let updated_country = snapshot.ref.path.pieces_[0].trim();
           console.log(`new update detected for country: ${updated_country}`);
-          //let new_val = snapshot.val();
-          let user_subs = subs.filter((sub) => sub.country == updated_country);
-          user_subs.map(async (sub) => {
-            console.log(sub);
-            send_stats(sub.user_id, updated_country);
-          });
+          if (snapshot.key === "total_cases") {
+            let new_val = snapshot.val();
+            old_val = new_val;
+            if (old_val != new_val) {
+              let user_subs = subs.filter(
+                (sub) => sub.country == updated_country
+              );
+              user_subs.map(async (sub) => {
+                console.log(sub);
+                send_stats(sub.user_id, updated_country);
+              });
+            }
+          }
         });
       });
     }
