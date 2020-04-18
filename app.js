@@ -250,28 +250,34 @@ function readFirebaseUpdates() {
         dbRef.on("child_changed", (snapshot) => {
           let updated_country = snapshot.ref.path.pieces_[0].trim();
           console.log(`new update detected for country: ${updated_country}`);
-          if (snapshot.key === "total_cases") {
-            old_val_cases = new_val_cases;
-            new_val_cases = snapshot.val();
-          } else if (snapshot.key === "total_deaths") {
-            old_val_deaths = new_val_deaths;
-            new_val_deaths = snapshot.val();
-          } else if (snapshot.key === "total_recovered") {
-            old_val_recovered = new_val_recovered;
-            new_val_recovered = snapshot.val();
-          }
           if (
-            old_val_cases != new_val_cases ||
-            old_val_recovered != new_val_recovered ||
-            old_val_deaths != new_val_deaths
+            snapshot.key === "total_cases" ||
+            snapshot.key === "total_deaths" ||
+            snapshot.key === "total_recovered"
           ) {
-            let user_subs = subs.filter(
-              (sub) => sub.country == updated_country
-            );
-            user_subs.map(async (sub) => {
-              console.log(sub);
-              send_stats(sub.user_id, updated_country);
-            });
+            if (snapshot.key === "total_cases") {
+              old_val_cases = new_val_cases;
+              new_val_cases = snapshot.val();
+            } else if (snapshot.key === "total_deaths") {
+              old_val_deaths = new_val_deaths;
+              new_val_deaths = snapshot.val();
+            } else if (snapshot.key === "total_recovered") {
+              old_val_recovered = new_val_recovered;
+              new_val_recovered = snapshot.val();
+            }
+            if (
+              old_val_cases != new_val_cases ||
+              old_val_recovered != new_val_recovered ||
+              old_val_deaths != new_val_deaths
+            ) {
+              let user_subs = subs.filter(
+                (sub) => sub.country == updated_country
+              );
+              user_subs.map(async (sub) => {
+                console.log(sub);
+                send_stats(sub.user_id, updated_country);
+              });
+            }
           }
         });
       });
