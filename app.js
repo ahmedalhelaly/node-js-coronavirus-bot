@@ -148,29 +148,31 @@ async function send_stats(sender_id, country) {
   }
 }
 function sendMessage(recipientId, message) {
-  request({
-    url:
-      "https://graph.facebook.com/v3.2/me/messages?access_token=" +
-      config.pageAccesToken,
-    method: "POST",
-    json: true,
-    json: {
-      recipient: {
-        id: recipientId,
+  if (recipientId != "103691044616588") {
+    request({
+      url:
+        "https://graph.facebook.com/v3.2/me/messages?access_token=" +
+        config.pageAccesToken,
+      method: "POST",
+      json: true,
+      json: {
+        recipient: {
+          id: recipientId,
+        },
+        message: {
+          text: message,
+        },
       },
-      message: {
-        text: message,
+      function(error, response, body) {
+        if (error) {
+          console.log("Error sending message: ", error);
+        } else if (response.body.error) {
+          // console.log('Error: ', response.body.error);
+        }
       },
-    },
-    function(error, response, body) {
-      if (error) {
-        console.log("Error sending message: ", error);
-      } else if (response.body.error) {
-        // console.log('Error: ', response.body.error);
-      }
-    },
-  });
-  console.log(`New message sent: ${message} to: ${recipientId}`);
+    });
+    console.log(`New message sent: ${message} to: ${recipientId}`);
+  }
 }
 function readFromFirebase(country_name) {
   return new Promise((resolve, reject) => {

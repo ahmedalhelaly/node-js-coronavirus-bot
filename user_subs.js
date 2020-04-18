@@ -1,7 +1,7 @@
 "use strict";
 
 const fs = require("fs");
-const jPath = "./recepients.json";
+const jPath = `${__dirname}/recepients.json`;
 var recepients = [];
 
 module.exports = class {
@@ -34,7 +34,7 @@ module.exports = class {
         console.log("creating new json file.");
       }
       data = JSON.stringify(recepients);
-      fs.writeFileSync("recepients.json", data);
+      fs.writeFileSync(`${__dirname}/recepients.json`, data);
       console.log("json file updated.");
     } catch (error) {
       console.log(error);
