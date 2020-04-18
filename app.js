@@ -68,7 +68,7 @@ app.post("/webhook", (req, res) => {
       }
 
       if (webhook_event.message) {
-        console.log(country_list);
+        //console.log(country_list);
         msg_text = webhook_event.message.text.trim().toLowerCase();
         sender_id = webhook_event.sender.id;
         if (msg_text && sender_id) {
