@@ -72,6 +72,8 @@ function readFromFirebase(country_name) {
 }
 async function readFirebaseUpdates() {
   try {
+    dbRefs_Updates = [];
+
     // List all subscribers from firebase
     await get_subscribers();
     if (firebase.apps.length == 0) {
@@ -79,7 +81,6 @@ async function readFirebaseUpdates() {
         databaseURL: config.firebaseUrl,
       });
     }
-    dbRefs_Updates = [];
 
     recepients.map((sub) => {
       dbRefs_Updates.push(db.ref(sub.country));
