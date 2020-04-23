@@ -10,6 +10,7 @@ firebase.initializeApp({
 });
 var db = firebase.database();
 var recepients = [];
+var dbRefs_Updates = [];
 
 function readFromFirebase(country_name) {
   return new Promise((resolve, reject) => {
@@ -73,13 +74,13 @@ async function readFirebaseUpdates() {
   try {
     // List all subscribers from firebase
     await get_subscribers();
-
     if (firebase.apps.length == 0) {
       firebase.initializeApp({
         databaseURL: config.firebaseUrl,
       });
     }
-    var dbRefs_Updates = [];
+    dbRefs_Updates = [];
+
     recepients.map((sub) => {
       dbRefs_Updates.push(db.ref(sub.country));
     });
