@@ -9,7 +9,6 @@ firebase.initializeApp({
   databaseURL: config.firebaseUrl,
 });
 var db = firebase.database();
-var dbRefs_Updates = [];
 var recepients = [];
 
 function readFromFirebase(country_name) {
@@ -65,18 +64,20 @@ function readFromFirebase(country_name) {
     }
   });
 }
-function readFirebaseUpdates() {
+async function readFirebaseUpdates() {
   try {
+    // List all subscribers from firebase
+    await get_subscribers();
+
     if (firebase.apps.length == 0) {
       firebase.initializeApp({
         databaseURL: config.firebaseUrl,
       });
     }
-    dbRefs_Updates = [];
+    var dbRefs_Updates = [];
     recepients.map((sub) => {
       dbRefs_Updates.push(db.ref(sub.country));
     });
-    console.log(`watching ${dbRefs_Updates.length} coutries for updates`);
     var old_val_cases;
     var old_val_recovered;
     var old_val_deaths;
@@ -87,40 +88,59 @@ function readFirebaseUpdates() {
     if (dbRefs_Updates) {
       dbRefs_Updates.forEach((dbRef) => {
         // Get the data on a post that has changed
-        dbRef.on("child_changed", (snapshot) => {
-          let updated_country = snapshot.ref.path.pieces_[0].trim();
-          console.log(`new update detected for country: ${updated_country}`);
-          //console.log(subs);
-          if (
-            snapshot.key === "total_cases" ||
-            snapshot.key === "total_deaths" ||
-            snapshot.key === "total_recovered"
-          ) {
-            if (snapshot.key === "total_cases") {
-              old_val_cases = new_val_cases;
-              new_val_cases = snapshot.val();
-            } else if (snapshot.key === "total_deaths") {
-              old_val_deaths = new_val_deaths;
-              new_val_deaths = snapshot.val();
-            } else if (snapshot.key === "total_recovered") {
-              old_val_recovered = new_val_recovered;
-              new_val_recovered = snapshot.val();
-            }
+        console.log(
+          `watching ${dbRefs_Updates.length} coutries for updates: ${dbRef.key}`
+        );
+        dbRef.on(
+          "child_changed",
+          (snapshot) => {
+            //console.log(snapshot.val());
+            let updated_country = snapshot.ref.path.pieces_[0].trim();
+            //let updated_country = snapshot.child("country").val().trim();
+
             if (
-              old_val_cases != new_val_cases ||
-              old_val_recovered != new_val_recovered ||
-              old_val_deaths != new_val_deaths
+              snapshot.key === "total_cases" ||
+              snapshot.key === "total_deaths" ||
+              snapshot.key === "total_recovered"
             ) {
-              let user_subs = recepients.filter(
-                (sub) => sub.country == updated_country
-              );
-              user_subs.map(async (sub) => {
-                console.log(sub);
-                app.send_stats(sub.userid, updated_country);
-              });
+              if (snapshot.key === "total_cases") {
+                old_val_cases = new_val_cases;
+                new_val_cases = snapshot.val();
+                console.log(
+                  `new update detected for country: ${updated_country} value of ${snapshot.key}`
+                );
+              } else if (snapshot.key === "total_deaths") {
+                old_val_deaths = new_val_deaths;
+                new_val_deaths = snapshot.val();
+                console.log(
+                  `new update detected for country: ${updated_country} value of ${snapshot.key}`
+                );
+              } else if (snapshot.key === "total_recovered") {
+                old_val_recovered = new_val_recovered;
+                new_val_recovered = snapshot.val();
+                console.log(
+                  `new update detected for country: ${updated_country} value of ${snapshot.key}`
+                );
+              }
+              if (
+                old_val_cases != new_val_cases ||
+                old_val_recovered != new_val_recovered ||
+                old_val_deaths != new_val_deaths
+              ) {
+                let user_subs = recepients.filter(
+                  (sub) => sub.country === updated_country
+                );
+                user_subs.map(async (sub) => {
+                  console.log(sub);
+                  app.send_stats(sub.userid, updated_country);
+                });
+              }
             }
+          },
+          function (error) {
+            console.log(error);
           }
-        });
+        );
       });
     }
   } catch (error) {
@@ -138,16 +158,22 @@ function readCountries() {
     var dbRef = db.ref();
 
     dbRef
-      .once("value", function (snapshot) {
-        snapshot.forEach((node) => {
-          if (
-            node.child("total_cases").val() &&
-            parseFloat(node.child("total_cases").val().replace(",", "")) > 0
-          ) {
-            countries.push(node.key);
-          }
-        });
-      })
+      .once(
+        "value",
+        function (snapshot) {
+          snapshot.forEach((node) => {
+            if (
+              node.child("total_cases").val() &&
+              parseFloat(node.child("total_cases").val().replace(",", "")) > 0
+            ) {
+              countries.push(node.key);
+            }
+          });
+        },
+        function (error) {
+          console.log(error);
+        }
+      )
       .then(() => resolve(countries))
       .catch(() => reject(countries));
   });
@@ -155,18 +181,16 @@ function readCountries() {
 
 function get_users() {
   return new Promise((resolve, reject) => {
-    var countries = [];
     if (firebase.apps.length == 0) {
       firebase.initializeApp({
         databaseURL: config.firebaseUrl,
       });
     }
     var dbRef = db.ref("/0_subs");
-
     dbRef
       .once("value", function (snapshot) {
         snapshot.forEach((node) => {
-          //console.log(node.val());
+          //console.log(node.key);
           recepients.push(node.val());
         });
       })
@@ -183,19 +207,26 @@ function add_user(user_id, country) {
       .set({
         userid: user_id,
         country: country,
-      })
-      .then(() => {
-        console.log(
-          `New subscriber saved: user id [${user_id}], country [${country}]`
-        );
       });
+    addUserRef.then(() => {
+      console.log(
+        `New subscriber saved: user id [${user_id}], country [${country}]`
+      );
+    });
   } catch (error) {
     console.log(error);
   }
 }
 
+async function get_subscribers() {
+  recepients = [];
+  await get_users().then((recepients) => {
+    recepients = recepients;
+  });
+  console.log(recepients);
+}
+
 exports.add_user = add_user;
-exports.get_users = get_users;
 exports.readCountries = readCountries;
 exports.readFirebaseUpdates = readFirebaseUpdates;
 exports.readFromFirebase = readFromFirebase;

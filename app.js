@@ -11,7 +11,6 @@ const firebase = require("./firebase_conn");
 var country_list = [];
 var msg_text;
 var sender_id;
-var subs;
 
 // privacy policy page for facebook developers app publishing
 app.get("/privacy_policy", (req, res) => {
@@ -45,8 +44,7 @@ app.get("/webhook", (req, res) => {
 // List all countries from firebase
 get_countries();
 
-// List all subscribers from firebase
-get_subscribers();
+firebase.readFirebaseUpdates();
 
 // Creates the endpoint for our webhook
 app.post("/webhook", (req, res) => {
@@ -87,15 +85,15 @@ app.post("/webhook", (req, res) => {
               sender_id,
               `Your country has been updated to ${msg_text}.`
             );
-            get_subscribers();
+            firebase.readFirebaseUpdates();
           } else if (msg_text === "get started") {
             sendMessage(
               sender_id,
               "Please, enter your country name to receive updates \n"
             );
-            sendMessage(
+            sendMessageWithButton(
               sender_id,
-              "Or, you can choose from the list by sending (country list) \n"
+              "Or, you can choose from the list. \n"
             );
           } else if (msg_text === "country list") {
             sendCountries();
@@ -125,10 +123,12 @@ app.post("/webhook", (req, res) => {
             sender_id,
             "Please, enter your country name to receive updates \n"
           );
-          sendMessage(
+          sendMessageWithButton(
             sender_id,
-            "Or, you can choose from the list by sending (country list) \n"
+            "Or, you can choose from the list. \n"
           );
+        } else if (payload === "COUNTRY_LIST") {
+          sendCountries();
         }
       }
     });
@@ -143,12 +143,6 @@ async function get_countries() {
   console.log(`${country_list.length} countries found in database`);
 }
 
-async function get_subscribers() {
-  subs = await firebase.get_users().then((recepients) => recepients);
-  console.log(subs);
-  firebase.readFirebaseUpdates();
-}
-
 function sendCountries() {
   let countries = country_list.map((x) =>
     x.replace(/^\w/, (c) => c.toUpperCase())
@@ -160,10 +154,6 @@ function sendCountries() {
   sendMessage(sender_id, countries_part1);
   sendMessage(sender_id, countries_part2);
 }
-
-// Sets server port and logs message on success
-let port = process.env.PORT || config.port;
-app.listen(port, () => console.log(`webhook is listening on port ${port}`));
 
 async function send_stats(sender_id, country) {
   try {
@@ -201,5 +191,49 @@ function sendMessage(recipientId, message) {
     console.log(`New message sent: ${message} to: ${recipientId}`);
   }
 }
+
+function sendMessageWithButton(recipientId, message) {
+  if (recipientId != "103691044616588") {
+    request({
+      url:
+        "https://graph.facebook.com/v6.0/me/messages?access_token=" +
+        config.pageAccesToken,
+      method: "POST",
+      json: true,
+      json: {
+        recipient: {
+          id: recipientId,
+        },
+        message: {
+          attachment: {
+            type: "template",
+            payload: {
+              template_type: "button",
+              text: message,
+              buttons: [
+                {
+                  type: "postback",
+                  title: "country list",
+                  payload: "COUNTRY_LIST",
+                },
+              ],
+            },
+          },
+        },
+      },
+      function(error, response, body) {
+        if (error) {
+          console.log("Error sending message: ", error);
+        } else if (response.body.error) {
+          // console.log('Error: ', response.body.error);
+        }
+      },
+    });
+    console.log(`New message sent: ${message} to: ${recipientId}`);
+  }
+}
+// Sets server port and logs message on success
+let port = process.env.PORT || config.port;
+app.listen(port, () => console.log(`webhook is listening on port ${port}`));
 
 exports.send_stats = send_stats;
