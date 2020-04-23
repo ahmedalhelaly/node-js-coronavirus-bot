@@ -53,7 +53,12 @@ function readFromFirebase(country_name) {
             parseFloat(stats.total_tests.replace(",", ""))) *
           100
         ).toFixed(1)} %
-                                                  
+        Deaths/Cases = ${(
+          (parseFloat(stats.total_deaths.replace(",", "")) /
+            parseFloat(stats.total_cases.replace(",", ""))) *
+          100
+        ).toFixed(1)} %
+                                                 
       `;
           //console.log(resultMessage);
         })
@@ -103,7 +108,7 @@ async function readFirebaseUpdates() {
             let updated_country = snapshot.ref.path.pieces_[0].trim();
             //let updated_country = snapshot.child("country").val().trim();
 
-            if (snapshot.key != "last_updated" || snapshot.key != "country") {
+            if (snapshot.key != "last_updated" && snapshot.key != "country") {
               if (snapshot.key === "total_cases") {
                 old_val_cases = new_val_cases;
                 new_val_cases = snapshot.val();

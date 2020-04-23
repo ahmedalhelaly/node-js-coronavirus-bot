@@ -121,7 +121,7 @@ app.post("/webhook", (req, res) => {
         if (payload === "GET_STARTED" || payload === "get started") {
           sendMessageWithButton(
             sender_id,
-            "Please, enter your country name to receive updates \n Or, you can choose from the list. \n",
+            "Please, enter your country (or continent) to receive updates \n Or, you can choose from the list. \n",
             "country list",
             "COUNTRY_LIST"
           );
