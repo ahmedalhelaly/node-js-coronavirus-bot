@@ -89,7 +89,7 @@ app.post("/webhook", (req, res) => {
           } else if (msg_text === "get started") {
             sendMessageWithButton(
               sender_id,
-              "Please, enter your country name to receive updates \n Or, you can choose from the list. \n",
+              "Please, enter your country (or continent) to receive updates \n Or, you can choose from the list. \n",
               "country list",
               "COUNTRY_LIST"
             );
@@ -98,7 +98,7 @@ app.post("/webhook", (req, res) => {
           } else {
             sendMessageWithButton(
               sender_id,
-              "Sorry, try using Get Started button or type any country name.",
+              "Sorry, I cannot understand you, try using the Get Started button.",
               "get started",
               "GET_STARTED"
             );
