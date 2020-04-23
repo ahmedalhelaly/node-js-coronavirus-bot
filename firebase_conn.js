@@ -72,6 +72,11 @@ function readFromFirebase(country_name) {
 }
 async function readFirebaseUpdates() {
   try {
+    if (dbRefs_Updates) {
+      dbRefs_Updates.forEach((dbRef) => {
+        dbRef.off("child_changed");
+      });
+    }
     dbRefs_Updates = [];
 
     // List all subscribers from firebase
@@ -85,6 +90,7 @@ async function readFirebaseUpdates() {
     recepients.map((sub) => {
       dbRefs_Updates.push(db.ref(sub.country));
     });
+
     var old_val_cases;
     var old_val_recovered;
     var old_val_deaths;
