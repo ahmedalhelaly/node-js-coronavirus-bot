@@ -87,20 +87,20 @@ app.post("/webhook", (req, res) => {
             );
             firebase.readFirebaseUpdates();
           } else if (msg_text === "get started") {
-            sendMessage(
-              sender_id,
-              "Please, enter your country name to receive updates \n"
-            );
             sendMessageWithButton(
               sender_id,
-              "Or, you can choose from the list. \n"
+              "Please, enter your country name to receive updates \n Or, you can choose from the list. \n",
+              "country list",
+              "COUNTRY_LIST"
             );
           } else if (msg_text === "country list") {
             sendCountries();
           } else {
-            sendMessage(
+            sendMessageWithButton(
               sender_id,
-              "Sorry, try using Get Started button or type any country name."
+              "Sorry, try using Get Started button or type any country name.",
+              "get started",
+              "GET_STARTED"
             );
           }
         }
@@ -119,13 +119,11 @@ app.post("/webhook", (req, res) => {
         console.log("Received Payload:", `${payload}`);
         // Set the action based on the payload
         if (payload === "GET_STARTED" || payload === "get started") {
-          sendMessage(
-            sender_id,
-            "Please, enter your country name to receive updates \n"
-          );
           sendMessageWithButton(
             sender_id,
-            "Or, you can choose from the list. \n"
+            "Please, enter your country name to receive updates \n Or, you can choose from the list. \n",
+            "country list",
+            "COUNTRY_LIST"
           );
         } else if (payload === "COUNTRY_LIST") {
           sendCountries();
@@ -192,7 +190,12 @@ function sendMessage(recipientId, message) {
   }
 }
 
-function sendMessageWithButton(recipientId, message) {
+function sendMessageWithButton(
+  recipientId,
+  message,
+  buttonText,
+  buttonPayload
+) {
   if (recipientId != "103691044616588") {
     request({
       url:
@@ -213,8 +216,8 @@ function sendMessageWithButton(recipientId, message) {
               buttons: [
                 {
                   type: "postback",
-                  title: "country list",
-                  payload: "COUNTRY_LIST",
+                  title: buttonText,
+                  payload: buttonPayload,
                 },
               ],
             },
