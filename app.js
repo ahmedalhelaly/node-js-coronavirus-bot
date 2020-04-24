@@ -80,15 +80,8 @@ app.post("/webhook", (req, res) => {
         sender_id = webhook_event.sender.id;
         if (msg_text && sender_id) {
           console.log(`New message received: ${msg_text} from: ${sender_id}`);
-          User.getUserProfile(sender_id)
-            .then((userProfile) => {
-              sender_name = userProfile.firstName + " " + userProfile.lastName;
-              //console.log(sender_name);
-            })
-            .catch((error) => {
-              // The profile is unavailable
-              console.log("Profile is unavailable:", error);
-            });
+          get_sender_name(sender_id);
+
           if (country_list && country_list.includes(msg_text)) {
             send_stats(sender_id, msg_text);
             firebase.add_user(sender_id, sender_name, msg_text);
@@ -101,7 +94,7 @@ app.post("/webhook", (req, res) => {
             sendMessageWithButton(
               sender_id,
               `Hello, ${
-                sender_name.split(" ")[0]
+                sender_name.split(" ")[0] || " "
               }\n Please, enter your country (or continent) to receive updates \n Or, you can choose from the list. \n\n`,
               "country list",
               "COUNTRY_LIST"
@@ -112,7 +105,7 @@ app.post("/webhook", (req, res) => {
             sendMessageWithButton(
               sender_id,
               `Sorry, ${
-                sender_name.split(" ")[0]
+                sender_name.split(" ")[0] || " "
               }, I cannot understand you, try using the Get Started button.`,
               "get started",
               "GET_STARTED"
@@ -122,15 +115,7 @@ app.post("/webhook", (req, res) => {
       }
       if (webhook_event.postback) {
         sender_id = webhook_event.sender.id;
-        User.getUserProfile(sender_id)
-          .then((userProfile) => {
-            sender_name = userProfile.firstName + " " + userProfile.lastName;
-            //console.log(sender_name);
-          })
-          .catch((error) => {
-            // The profile is unavailable
-            console.log("Profile is unavailable:", error);
-          });
+        get_sender_name(sender_id);
         let postback = webhook_event.postback;
         // Check for the special Get Starded with referral
         let payload;
@@ -146,7 +131,7 @@ app.post("/webhook", (req, res) => {
           sendMessageWithButton(
             sender_id,
             `Hello, ${
-              sender_name.split(" ")[0]
+              sender_name.split(" ")[0] || " "
             }\n Please, enter your country (or continent) to receive updates \n Or, you can choose from the list. \n\n`,
             "country list",
             "COUNTRY_LIST"
@@ -165,6 +150,18 @@ app.post("/webhook", (req, res) => {
 async function get_countries() {
   country_list = await firebase.readCountries().then((countries) => countries);
   console.log(`${country_list.length} countries found in database`);
+}
+
+async function get_sender_name(senderID) {
+  await User.getUserProfile(senderID)
+    .then((userProfile) => {
+      sender_name = userProfile.firstName + " " + userProfile.lastName;
+      //console.log(sender_name);
+    })
+    .catch((error) => {
+      // The profile is unavailable
+      console.log("Profile is unavailable:", error);
+    });
 }
 
 function sendCountries() {
