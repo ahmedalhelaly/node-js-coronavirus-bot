@@ -100,7 +100,9 @@ app.post("/webhook", (req, res) => {
           } else if (msg_text === "get started") {
             sendMessageWithButton(
               sender_id,
-              `Hello, ${sender_name}\n Please, enter your country (or continent) to receive updates \n Or, you can choose from the list. \n\n`,
+              `Hello, ${
+                sender_name.split()[0]
+              }\n Please, enter your country (or continent) to receive updates \n Or, you can choose from the list. \n\n`,
               "country list",
               "COUNTRY_LIST"
             );
@@ -109,7 +111,9 @@ app.post("/webhook", (req, res) => {
           } else {
             sendMessageWithButton(
               sender_id,
-              `Sorry, ${sender_name}, I cannot understand you, try using the Get Started button.`,
+              `Sorry, ${
+                sender_name.split()[0]
+              }, I cannot understand you, try using the Get Started button.`,
               "get started",
               "GET_STARTED"
             );
@@ -141,7 +145,9 @@ app.post("/webhook", (req, res) => {
         if (payload === "GET_STARTED" || payload === "get started") {
           sendMessageWithButton(
             sender_id,
-            `Hello, ${sender_name}\n Please, enter your country (or continent) to receive updates \n Or, you can choose from the list. \n\n`,
+            `Hello, ${
+              sender_name.split()[0]
+            }\n Please, enter your country (or continent) to receive updates \n Or, you can choose from the list. \n\n`,
             "country list",
             "COUNTRY_LIST"
           );
