@@ -83,7 +83,7 @@ app.post("/webhook", (req, res) => {
           User.getUserProfile(sender_id)
             .then((userProfile) => {
               sender_name = userProfile.firstName + " " + userProfile.lastName;
-              console.log(sender_name);
+              //console.log(sender_name);
             })
             .catch((error) => {
               // The profile is unavailable
@@ -101,7 +101,7 @@ app.post("/webhook", (req, res) => {
             sendMessageWithButton(
               sender_id,
               `Hello, ${
-                sender_name.split()[0]
+                sender_name.split(" ")[0]
               }\n Please, enter your country (or continent) to receive updates \n Or, you can choose from the list. \n\n`,
               "country list",
               "COUNTRY_LIST"
@@ -112,7 +112,7 @@ app.post("/webhook", (req, res) => {
             sendMessageWithButton(
               sender_id,
               `Sorry, ${
-                sender_name.split()[0]
+                sender_name.split(" ")[0]
               }, I cannot understand you, try using the Get Started button.`,
               "get started",
               "GET_STARTED"
@@ -125,7 +125,7 @@ app.post("/webhook", (req, res) => {
         User.getUserProfile(sender_id)
           .then((userProfile) => {
             sender_name = userProfile.firstName + " " + userProfile.lastName;
-            console.log(sender_name);
+            //console.log(sender_name);
           })
           .catch((error) => {
             // The profile is unavailable
@@ -146,7 +146,7 @@ app.post("/webhook", (req, res) => {
           sendMessageWithButton(
             sender_id,
             `Hello, ${
-              sender_name.split()[0]
+              sender_name.split(" ")[0]
             }\n Please, enter your country (or continent) to receive updates \n Or, you can choose from the list. \n\n`,
             "country list",
             "COUNTRY_LIST"
