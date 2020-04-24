@@ -10,9 +10,9 @@ const firebase = require("./firebase_conn");
 const User = require("./user");
 
 var country_list = [];
-var msg_text;
-var sender_id;
-var sender_name;
+var msg_text = "";
+var sender_id = "";
+var sender_name = "";
 
 // privacy policy page for facebook developers app publishing
 app.get("/privacy_policy", (req, res) => {
@@ -87,7 +87,9 @@ app.post("/webhook", (req, res) => {
             firebase.add_user(sender_id, sender_name, msg_text);
             sendMessage(
               sender_id,
-              `${sender_name}, your country has been recorded to ${msg_text.toUpperCase()}.`
+              `${
+                sender_name.split(" ")[0] || " "
+              }, your country has been recorded: ${msg_text.toUpperCase()}.`
             );
             firebase.readFirebaseUpdates();
           } else if (msg_text === "get started") {
