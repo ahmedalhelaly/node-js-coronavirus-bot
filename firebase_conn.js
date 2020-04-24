@@ -227,18 +227,19 @@ function get_users() {
   });
 }
 
-function add_user(user_id, country) {
+function add_user(user_id, name, country) {
   try {
     var addUserRef = firebase
       .database()
       .ref("0_subs/" + user_id)
       .set({
         userid: user_id,
+        name: name,
         country: country,
       });
     addUserRef.then(() => {
       console.log(
-        `New subscriber saved: user id [${user_id}], country [${country}]`
+        `Subscriber data saved: user id [${user_id}], name [${name}], country [${country}]`
       );
     });
   } catch (error) {

@@ -7,10 +7,12 @@ const bodyParser = require("body-parser");
 const app = express().use(bodyParser.json()); // creates express http server
 const config = require("./config");
 const firebase = require("./firebase_conn");
+const User = require("./user");
 
 var country_list = [];
 var msg_text;
 var sender_id;
+var sender_name;
 
 // privacy policy page for facebook developers app publishing
 app.get("/privacy_policy", (req, res) => {
@@ -78,18 +80,27 @@ app.post("/webhook", (req, res) => {
         sender_id = webhook_event.sender.id;
         if (msg_text && sender_id) {
           console.log(`New message received: ${msg_text} from: ${sender_id}`);
+          User.getUserProfile(sender_id)
+            .then((userProfile) => {
+              sender_name = userProfile.firstName + " " + userProfile.lastName;
+              console.log(sender_name);
+            })
+            .catch((error) => {
+              // The profile is unavailable
+              console.log("Profile is unavailable:", error);
+            });
           if (country_list && country_list.includes(msg_text)) {
             send_stats(sender_id, msg_text);
-            firebase.add_user(sender_id, msg_text);
+            firebase.add_user(sender_id, sender_name, msg_text);
             sendMessage(
               sender_id,
-              `Your country has been updated to ${msg_text}.`
+              `${sender_name}, your country has been recorded to ${msg_text.toUpperCase()}.`
             );
             firebase.readFirebaseUpdates();
           } else if (msg_text === "get started") {
             sendMessageWithButton(
               sender_id,
-              "Please, enter your country (or continent) to receive updates \n Or, you can choose from the list. \n",
+              `Hello, ${sender_name}\n Please, enter your country (or continent) to receive updates \n Or, you can choose from the list. \n\n`,
               "country list",
               "COUNTRY_LIST"
             );
@@ -98,7 +109,7 @@ app.post("/webhook", (req, res) => {
           } else {
             sendMessageWithButton(
               sender_id,
-              "Sorry, I cannot understand you, try using the Get Started button.",
+              `Sorry, ${sender_name}, I cannot understand you, try using the Get Started button.`,
               "get started",
               "GET_STARTED"
             );
@@ -107,6 +118,15 @@ app.post("/webhook", (req, res) => {
       }
       if (webhook_event.postback) {
         sender_id = webhook_event.sender.id;
+        User.getUserProfile(sender_id)
+          .then((userProfile) => {
+            sender_name = userProfile.firstName + " " + userProfile.lastName;
+            console.log(sender_name);
+          })
+          .catch((error) => {
+            // The profile is unavailable
+            console.log("Profile is unavailable:", error);
+          });
         let postback = webhook_event.postback;
         // Check for the special Get Starded with referral
         let payload;
@@ -121,7 +141,7 @@ app.post("/webhook", (req, res) => {
         if (payload === "GET_STARTED" || payload === "get started") {
           sendMessageWithButton(
             sender_id,
-            "Please, enter your country (or continent) to receive updates \n Or, you can choose from the list. \n",
+            `Hello, ${sender_name}\n Please, enter your country (or continent) to receive updates \n Or, you can choose from the list. \n\n`,
             "country list",
             "COUNTRY_LIST"
           );
