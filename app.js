@@ -12,6 +12,7 @@ const keepAlive = require("./keep_alive"); // my module!
 
 var country_list = [];
 var user_data = [];
+var sender_name;
 
 // privacy policy page for facebook developers app publishing
 app.get("/privacy_policy", (req, res) => {
@@ -78,7 +79,7 @@ app.post("/webhook", (req, res) => {
       if (webhook_event.message) {
         var msg_text = "";
         var sender_id = "";
-        var sender_name = "";
+        sender_name = "";
         //console.log(country_list);
         msg_text = webhook_event.message.text.trim().toLowerCase();
         sender_id = webhook_event.sender.id;
@@ -86,7 +87,7 @@ app.post("/webhook", (req, res) => {
           console.log(
             `New message received: ${msg_text.toUpperCase()} from: ${sender_id}`
           );
-          sender_name = get_sender_name(sender_id);
+          get_sender_name(sender_id);
 
           if (country_list && country_list.includes(msg_text)) {
             send_stats(sender_id, msg_text);
@@ -108,7 +109,7 @@ app.post("/webhook", (req, res) => {
               sender_id,
               `Sorry, ${
                 sender_name.split(" ")[0] || " "
-              }, I cannot understand you, try using the Get Started button.`,
+              } I cannot understand you, try using the Get Started button.`,
               "get started",
               "GET_STARTED"
             );
@@ -118,9 +119,9 @@ app.post("/webhook", (req, res) => {
       if (webhook_event.postback) {
         var msg_text = "";
         var sender_id = "";
-        var sender_name = "";
+        sender_name = "";
         sender_id = webhook_event.sender.id;
-        sender_name = get_sender_name(sender_id);
+        get_sender_name(sender_id);
 
         let postback = webhook_event.postback;
         // Check for the special Get Starded with referral
@@ -161,19 +162,20 @@ async function get_countries() {
 async function get_subs() {
   await firebase.get_subscribers();
 }
+
 async function get_sender_name(senderID) {
-  await User.getUserProfile(senderID)
-    .then((userProfile) => {
-      if (userProfile) {
-        return userProfile.firstName + " " + userProfile.lastName;
-      }
-      //console.log(sender_name);
-    })
-    .catch((error) => {
-      // The profile is unavailable
-      console.log("Profile is unavailable:", error);
-      return " ";
-    });
+  try {
+    var userProfile = await User.getUserProfile(senderID).then(
+      (profile) => profile
+    );
+    //user_profile = userProfile;
+    //console.log(user_profile);
+    if (userProfile) {
+      sender_name = userProfile.firstName + " " + userProfile.lastName;
+    }
+  } catch (error) {
+    console.log(error);
+  }
 }
 
 function getUserData(senderID) {

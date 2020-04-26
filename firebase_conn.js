@@ -77,8 +77,6 @@ async function readFirebaseUpdates() {
         dbRef.off("child_changed");
       });
     }
-    //dbRefs_Updates.length = 0;
-    //dbRefs_Updates = [];
     dbRefs_Updates.splice(0, dbRefs_Updates.length);
 
     // List all subscribers from firebase
@@ -95,16 +93,7 @@ async function readFirebaseUpdates() {
     });
 
     var old_val_cases;
-    var old_val_recovered;
-    var old_val_deaths;
-    var old_val_new_cases;
-    var old_val_new_deaths;
-
     var new_val_cases;
-    var new_val_recovered;
-    var new_val_deaths;
-    var new_val_new_cases;
-    var new_val_new_deaths;
 
     if (dbRefs_Updates) {
       dbRefs_Updates.forEach((dbRef) => {
@@ -119,45 +108,14 @@ async function readFirebaseUpdates() {
             let updated_country = snapshot.ref.path.pieces_[0].trim();
             //let updated_country = snapshot.child("country").val().trim();
 
-            if (snapshot.key != "last_updated" && snapshot.key != "country") {
-              if (snapshot.key === "total_cases") {
-                old_val_cases = new_val_cases;
-                new_val_cases = snapshot.val();
-                console.log(
-                  `new update detected for country: ${updated_country} value of ${snapshot.key}`
-                );
-              } else if (snapshot.key === "total_deaths") {
-                old_val_deaths = new_val_deaths;
-                new_val_deaths = snapshot.val();
-                console.log(
-                  `new update detected for country: ${updated_country} value of ${snapshot.key}`
-                );
-              } else if (snapshot.key === "total_recovered") {
-                old_val_recovered = new_val_recovered;
-                new_val_recovered = snapshot.val();
-                console.log(
-                  `new update detected for country: ${updated_country} value of ${snapshot.key}`
-                );
-              } else if (snapshot.key === "new_cases") {
-                old_val_new_cases = new_val_new_cases;
-                new_val_new_cases = snapshot.val();
-                console.log(
-                  `new update detected for country: ${updated_country} value of ${snapshot.key}`
-                );
-              } else if (snapshot.key === "new_deaths") {
-                old_val_new_deaths = new_val_new_deaths;
-                new_val_new_deaths = snapshot.val();
-                console.log(
-                  `new update detected for country: ${updated_country} value of ${snapshot.key}`
-                );
-              }
-              if (
-                old_val_cases != new_val_cases ||
-                old_val_recovered != new_val_recovered ||
-                old_val_deaths != new_val_deaths ||
-                old_val_new_cases != new_val_new_cases ||
-                old_val_new_deaths != new_val_new_deaths
-              ) {
+            if (snapshot.key === "total_cases") {
+              old_val_cases = new_val_cases;
+              new_val_cases = snapshot.val();
+              console.log(
+                `new update detected for country: ${updated_country} value of ${snapshot.key}`
+              );
+
+              if (old_val_cases != new_val_cases) {
                 let user_subs = recepients.filter(
                   (sub) => sub.country === updated_country
                 );
