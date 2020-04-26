@@ -11,10 +11,6 @@ const User = require("./user");
 const keepAlive = require("./keep_alive"); // my module!
 
 var country_list = [];
-var msg_text = "";
-var sender_id = "";
-var sender_name = "";
-var sender_country = "";
 var user_data = [];
 
 // privacy policy page for facebook developers app publishing
@@ -80,6 +76,9 @@ app.post("/webhook", (req, res) => {
       }
 
       if (webhook_event.message) {
+        var msg_text = "";
+        var sender_id = "";
+        var sender_name = "";
         //console.log(country_list);
         msg_text = webhook_event.message.text.trim().toLowerCase();
         sender_id = webhook_event.sender.id;
@@ -117,6 +116,9 @@ app.post("/webhook", (req, res) => {
         }
       }
       if (webhook_event.postback) {
+        var msg_text = "";
+        var sender_id = "";
+        var sender_name = "";
         sender_id = webhook_event.sender.id;
         get_sender_name(sender_id);
 
@@ -189,10 +191,6 @@ function getUserData(senderID) {
   });
 }
 
-async function get_sender_country(senderID) {
-  var sender_data = await getUserData(senderID).then((data) => data);
-  return sender_data[0].country || " ";
-}
 function sendCountries() {
   let countries = country_list.map((x) =>
     x.replace(/^\w/, (c) => c.toUpperCase())
