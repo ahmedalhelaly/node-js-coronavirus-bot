@@ -165,13 +165,14 @@ async function get_sender_name(senderID) {
   await User.getUserProfile(senderID)
     .then((userProfile) => {
       if (userProfile) {
-        sender_name = userProfile.firstName + " " + userProfile.lastName;
+        return userProfile.firstName + " " + userProfile.lastName;
       }
       //console.log(sender_name);
     })
     .catch((error) => {
       // The profile is unavailable
       console.log("Profile is unavailable:", error);
+      return " ";
     });
 }
 
