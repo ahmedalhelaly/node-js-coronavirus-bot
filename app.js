@@ -8,17 +8,23 @@ const app = express().use(bodyParser.json()); // creates express http server
 const config = require("./config");
 const firebase = require("./firebase_conn");
 const User = require("./user");
+const keepAlive = require("./keep_alive"); // my module!
 
 var country_list = [];
 var msg_text = "";
 var sender_id = "";
 var sender_name = "";
+var sender_country = "";
+var user_data = [];
 
 // privacy policy page for facebook developers app publishing
 app.get("/privacy_policy", (req, res) => {
   res.sendFile(`${__dirname}/privacy_policy.html`);
 });
 
+app.get("/", (req, res) => {
+  res.send("Welcome to Coronavirus Chatbot..");
+});
 // Adds support for GET requests to our webhook
 app.get("/webhook", (req, res) => {
   // Your verify token. Should be a random string.
@@ -43,8 +49,7 @@ app.get("/webhook", (req, res) => {
   }
 });
 
-// List all countries from firebase
-get_countries();
+get_subs();
 
 firebase.readFirebaseUpdates();
 
@@ -79,18 +84,14 @@ app.post("/webhook", (req, res) => {
         msg_text = webhook_event.message.text.trim().toLowerCase();
         sender_id = webhook_event.sender.id;
         if (msg_text && sender_id) {
-          console.log(`New message received: ${msg_text} from: ${sender_id}`);
+          console.log(
+            `New message received: ${msg_text.toUpperCase()} from: ${sender_id}`
+          );
           get_sender_name(sender_id);
 
           if (country_list && country_list.includes(msg_text)) {
             send_stats(sender_id, msg_text);
             firebase.add_user(sender_id, sender_name, msg_text);
-            sendMessage(
-              sender_id,
-              `${
-                sender_name.split(" ")[0] || " "
-              }, your country has been recorded: ${msg_text.toUpperCase()}.`
-            );
             firebase.readFirebaseUpdates();
           } else if (msg_text === "get started") {
             sendMessageWithButton(
@@ -118,6 +119,7 @@ app.post("/webhook", (req, res) => {
       if (webhook_event.postback) {
         sender_id = webhook_event.sender.id;
         get_sender_name(sender_id);
+
         let postback = webhook_event.postback;
         // Check for the special Get Starded with referral
         let payload;
@@ -154,10 +156,15 @@ async function get_countries() {
   console.log(`${country_list.length} countries found in database`);
 }
 
+async function get_subs() {
+  await firebase.get_subscribers();
+}
 async function get_sender_name(senderID) {
   await User.getUserProfile(senderID)
     .then((userProfile) => {
-      sender_name = userProfile.firstName + " " + userProfile.lastName;
+      if (userProfile) {
+        sender_name = userProfile.firstName + " " + userProfile.lastName;
+      }
       //console.log(sender_name);
     })
     .catch((error) => {
@@ -166,11 +173,30 @@ async function get_sender_name(senderID) {
     });
 }
 
+function getUserData(senderID) {
+  return new Promise((resolve, reject) => {
+    try {
+      user_data = firebase.recepients.filter((x) => x.userid === senderID);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      if (user_data) {
+        resolve(user_data);
+      } else {
+        reject(user_data);
+      }
+    }
+  });
+}
+
+async function get_sender_country(senderID) {
+  var sender_data = await getUserData(senderID).then((data) => data);
+  return sender_data[0].country || " ";
+}
 function sendCountries() {
   let countries = country_list.map((x) =>
     x.replace(/^\w/, (c) => c.toUpperCase())
   );
-
   let countries_part1 = `${countries.splice(0, 110).join("\r\n").trim()}`;
   let countries_part2 = `${countries.join("\r\n").trim()}`;
   //console.log(message_header + countries_part1 + countries_part2);
@@ -261,7 +287,13 @@ function sendMessageWithButton(
   }
 }
 // Sets server port and logs message on success
-let port = process.env.PORT || config.port;
-app.listen(port, () => console.log(`webhook is listening on port ${port}`));
+let port = config.port;
+let heroku_url = config.appUrl; // the url of your dyno
+app.listen(port, () => {
+  console.log(`webhook is listening on port ${port}`);
+  // List all countries from firebase
+  get_countries();
+  keepAlive(heroku_url); // will start once server starts
+});
 
 exports.send_stats = send_stats;

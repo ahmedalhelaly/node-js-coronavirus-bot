@@ -39,7 +39,7 @@ function readFromFirebase(country_name) {
             total_tests: snapshot.child("total_tests").val(),
           };
           resultMessage = `
-                    ${stats.country}
+        \t\t\t\t ${stats.country.toUpperCase()}
       ............................................
         Total cases = ${stats.total_cases}
         Total deaths = ${stats.total_deaths}
@@ -50,13 +50,13 @@ function readFromFirebase(country_name) {
         Critical cases = ${stats.critical_cases}
         Total tests = ${stats.total_tests}
         Cases/Tests = ${(
-          (parseFloat(stats.total_cases.replace(",", "")) /
-            parseFloat(stats.total_tests.replace(",", ""))) *
+          (parseFloat(stats.total_cases.replace(/(\D*)/g, "")) /
+            parseFloat(stats.total_tests.replace(/(\D*)/g, ""))) *
           100
         ).toFixed(1)} %
         Deaths/Cases = ${(
-          (parseFloat(stats.total_deaths.replace(",", "")) /
-            parseFloat(stats.total_cases.replace(",", ""))) *
+          (parseFloat(stats.total_deaths.replace(/(\D*)/g, "")) /
+            parseFloat(stats.total_cases.replace(/(\D*)/g, ""))) *
           100
         ).toFixed(1)} %
                                                  
@@ -77,10 +77,13 @@ async function readFirebaseUpdates() {
         dbRef.off("child_changed");
       });
     }
-    dbRefs_Updates = [];
+    //dbRefs_Updates.length = 0;
+    //dbRefs_Updates = [];
+    dbRefs_Updates.splice(0, dbRefs_Updates.length);
 
     // List all subscribers from firebase
     await get_subscribers();
+
     if (firebase.apps.length == 0) {
       firebase.initializeApp({
         databaseURL: config.firebaseUrl,
@@ -214,6 +217,7 @@ function get_users() {
         databaseURL: config.firebaseUrl,
       });
     }
+
     var dbRef = db.ref("/0_subs");
     dbRef
       .once("value", function (snapshot) {
@@ -248,14 +252,25 @@ function add_user(user_id, name, country) {
 }
 
 async function get_subscribers() {
-  recepients = [];
-  await get_users().then((recepients) => {
-    recepients = recepients;
-  });
-  console.log(recepients);
+  try {
+    var subs = [];
+    recepients.splice(0, recepients.length);
+    subs = await get_users().then((subs) => subs);
+    recepients = subs.filter(
+      (elem, index, self) =>
+        self.findIndex((t) => {
+          return t.userid === elem.userid;
+        }) === index
+    );
+    console.log();
+  } catch (error) {
+    console.log(error);
+  }
 }
 
 exports.add_user = add_user;
 exports.readCountries = readCountries;
 exports.readFirebaseUpdates = readFirebaseUpdates;
 exports.readFromFirebase = readFromFirebase;
+exports.recepients = recepients;
+exports.get_subscribers = get_subscribers;
