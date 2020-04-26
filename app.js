@@ -86,7 +86,7 @@ app.post("/webhook", (req, res) => {
           console.log(
             `New message received: ${msg_text.toUpperCase()} from: ${sender_id}`
           );
-          get_sender_name(sender_id);
+          sender_name = get_sender_name(sender_id);
 
           if (country_list && country_list.includes(msg_text)) {
             send_stats(sender_id, msg_text);
@@ -120,7 +120,7 @@ app.post("/webhook", (req, res) => {
         var sender_id = "";
         var sender_name = "";
         sender_id = webhook_event.sender.id;
-        get_sender_name(sender_id);
+        sender_name = get_sender_name(sender_id);
 
         let postback = webhook_event.postback;
         // Check for the special Get Starded with referral
