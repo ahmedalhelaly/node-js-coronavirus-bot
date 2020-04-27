@@ -220,7 +220,7 @@ async function get_subscribers() {
           return t.userid === elem.userid;
         }) === index
     );
-    console.log();
+    console.log(recepients);
   } catch (error) {
     console.log(error);
   }

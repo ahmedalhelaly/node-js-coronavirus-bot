@@ -12,7 +12,7 @@ const keepAlive = require("./keep_alive"); // my module!
 
 var country_list = [];
 var user_data = [];
-var sender_name;
+var sender_name = "";
 
 // privacy policy page for facebook developers app publishing
 app.get("/privacy_policy", (req, res) => {
@@ -78,11 +78,10 @@ app.post("/webhook", (req, res) => {
 
       if (webhook_event.message) {
         var msg_text = "";
-        var sender_id = "";
-        sender_name = "";
+
         //console.log(country_list);
         msg_text = webhook_event.message.text.trim().toLowerCase();
-        sender_id = webhook_event.sender.id;
+        var sender_id = webhook_event.sender.id;
         if (msg_text && sender_id) {
           console.log(
             `New message received: ${msg_text.toUpperCase()} from: ${sender_id}`
@@ -91,36 +90,40 @@ app.post("/webhook", (req, res) => {
 
           if (country_list && country_list.includes(msg_text)) {
             send_stats(sender_id, msg_text);
-            firebase.add_user(sender_id, sender_name, msg_text);
+            setTimeout(() => {
+              firebase.add_user(sender_id, sender_name, msg_text);
+            }, 800);
             firebase.readFirebaseUpdates();
           } else if (msg_text === "get started") {
-            sendMessageWithButton(
-              sender_id,
-              `Hello, ${
-                sender_name.split(" ")[0] || " "
-              }\n Please, enter your country (or continent) to receive updates \n Or, you can choose from the list. \n\n`,
-              "country list",
-              "COUNTRY_LIST"
-            );
+            setTimeout(() => {
+              sendMessageWithButton(
+                sender_id,
+                `Hello, ${
+                  sender_name.split(" ")[0] || " "
+                }\n Please, enter your country (or continent) to receive updates \n Or, you can choose from the list. \n\n`,
+                "country list",
+                "COUNTRY_LIST"
+              );
+            }, 800);
           } else if (msg_text === "country list") {
             sendCountries();
           } else {
-            sendMessageWithButton(
-              sender_id,
-              `Sorry, ${
-                sender_name.split(" ")[0] || " "
-              } I cannot understand you, try using the Get Started button.`,
-              "get started",
-              "GET_STARTED"
-            );
+            setTimeout(() => {
+              sendMessageWithButton(
+                sender_id,
+                `Sorry, ${
+                  sender_name.split(" ")[0] || " "
+                } I cannot understand you, try using the Get Started button.`,
+                "get started",
+                "GET_STARTED"
+              );
+            }, 800);
           }
         }
       }
       if (webhook_event.postback) {
         var msg_text = "";
-        var sender_id = "";
-        sender_name = "";
-        sender_id = webhook_event.sender.id;
+        var sender_id = webhook_event.sender.id;
         get_sender_name(sender_id);
 
         let postback = webhook_event.postback;
@@ -132,19 +135,21 @@ app.post("/webhook", (req, res) => {
           // Get the payload of the postback
           payload = postback.payload;
         }
-        console.log("Received Payload:", `${payload}`);
+        //console.log("Received Payload:", `${payload}`);
         // Set the action based on the payload
         if (payload === "GET_STARTED" || payload === "get started") {
-          sendMessageWithButton(
-            sender_id,
-            `Hello, ${
-              sender_name.split(" ")[0] || " "
-            }\n Please, enter your country (or continent) to receive updates \n Or, you can choose from the list. \n\n`,
-            "country list",
-            "COUNTRY_LIST"
-          );
+          setTimeout(() => {
+            sendMessageWithButton(
+              sender_id,
+              `Hello, ${
+                sender_name.split(" ")[0] || " "
+              }\n Please, enter your country (or continent) to receive updates \n Or, you can choose from the list. \n\n`,
+              "country list",
+              "COUNTRY_LIST"
+            );
+          }, 800);
         } else if (payload === "COUNTRY_LIST") {
-          sendCountries();
+          sendCountries(sender_id);
         }
       }
     });
@@ -164,18 +169,15 @@ async function get_subs() {
 }
 
 async function get_sender_name(senderID) {
-  try {
-    var userProfile = await User.getUserProfile(senderID).then(
-      (profile) => profile
-    );
-    //user_profile = userProfile;
-    //console.log(user_profile);
-    if (userProfile) {
+  await User.getUserProfile(senderID)
+    .then((userProfile) => {
       sender_name = userProfile.firstName + " " + userProfile.lastName;
-    }
-  } catch (error) {
-    console.log(error);
-  }
+      console.log(sender_name);
+    })
+    .catch((error) => {
+      // The profile is unavailable
+      console.log("Profile is unavailable:", error);
+    });
 }
 
 function getUserData(senderID) {
@@ -194,15 +196,15 @@ function getUserData(senderID) {
   });
 }
 
-function sendCountries() {
+function sendCountries(senderID) {
   let countries = country_list.map((x) =>
     x.replace(/^\w/, (c) => c.toUpperCase())
   );
   let countries_part1 = `${countries.splice(0, 110).join("\r\n").trim()}`;
   let countries_part2 = `${countries.join("\r\n").trim()}`;
   //console.log(message_header + countries_part1 + countries_part2);
-  sendMessage(sender_id, countries_part1);
-  sendMessage(sender_id, countries_part2);
+  sendMessage(senderID, countries_part1);
+  sendMessage(senderID, countries_part2);
 }
 
 async function send_stats(sender_id, country) {

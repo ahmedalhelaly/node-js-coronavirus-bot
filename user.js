@@ -3,24 +3,26 @@
 const request = require("request");
 const camelCase = require("camelcase");
 const config = require("./config");
-
 var userProfile = {};
 
-async function getUserProfile(senderID) {
-  try {
-    userProfile = await callUserProfileAPI(senderID);
-
-    for (const key in userProfile) {
-      const camelizedKey = camelCase(key);
-      const value = userProfile[key];
-      delete userProfile[key];
-      userProfile[camelizedKey] = value;
-    }
-
-    return userProfile;
-  } catch (err) {
-    console.log("Fetch failed:", err);
-  }
+function getUserProfile(senderID) {
+  return new Promise((res, rej) => {
+    userProfile = {};
+    callUserProfileAPI(senderID)
+      .then((Profile) => {
+        if (Profile) {
+          userProfile = Profile;
+          for (const key in userProfile) {
+            const camelizedKey = camelCase(key);
+            const value = userProfile[key];
+            delete userProfile[key];
+            userProfile[camelizedKey] = value;
+          }
+        }
+      })
+      .catch(() => rej(Error("Problem getting profile.")))
+      .finally(() => res(userProfile));
+  });
 }
 function callUserProfileAPI(senderID) {
   return new Promise(function (resolve, reject) {
